@@ -1,0 +1,632 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Shipt Router</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#1a1d24; --panel2:#22262f; --line:#2c313b;
+    --txt:#e8ebf0; --dim:#9aa3b2; --accent:#3ddc84; --accent2:#2bb673;
+    --warn:#ffb454; --bad:#ff5c5c; --good:#3ddc84; --blue:#5aa9ff;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--txt);
+    font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    overscroll-behavior-y:contain}
+  .wrap{max-width:560px;margin:0 auto;padding:14px 14px 120px}
+  h1{font-size:18px;margin:4px 0 2px;display:flex;align-items:center;gap:8px}
+  h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .sub{color:var(--dim);font-size:12.5px;margin:0 0 14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:14px;margin-bottom:12px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.5px;
+    color:var(--dim);margin:0 0 10px}
+  button{font:inherit;border:none;border-radius:11px;padding:13px 14px;
+    font-weight:600;cursor:pointer;width:100%}
+  .primary{background:var(--accent);color:#06210f}
+  .ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+  .danger{background:transparent;color:var(--bad);border:1px solid #5a2c2c}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1}
+  input,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);
+    color:var(--txt);border-radius:10px;padding:11px;font:inherit}
+  textarea{min-height:62px;resize:vertical}
+  label{font-size:12px;color:var(--dim);display:block;margin:8px 0 4px}
+  .hide{display:none!important}
+  .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;
+    background:var(--panel2);color:var(--dim);border:1px solid var(--line)}
+  .order{background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+    padding:11px;margin-bottom:8px;position:relative}
+  .order .x{position:absolute;top:8px;right:8px;width:26px;height:26px;padding:0;
+    background:transparent;color:var(--dim);border:1px solid var(--line);
+    border-radius:8px;line-height:1}
+  .order .nm{font-weight:700;font-size:14px;margin-right:30px}
+  .order .meta{font-size:12px;color:var(--dim);margin-top:3px}
+  .tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;margin-left:6px}
+  .tag.cur{background:#173a52;color:var(--blue)}
+  .tag.offer{background:#1d3326;color:var(--accent)}
+  .verdict{border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid}
+  .verdict.accept{background:#10301d;border-color:#1f5e38}
+  .verdict.skip{background:#33181a;border-color:#5a2c2c}
+  .verdict .big{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px}
+  .verdict .why{font-size:13px;color:var(--txt);margin-top:6px;opacity:.92}
+  .stops{margin-top:10px}
+  .stop{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+  .stop:first-child{border-top:none}
+  .stop .n{width:24px;height:24px;border-radius:50%;background:var(--panel);
+    display:flex;align-items:center;justify-content:center;font-size:12px;
+    font-weight:700;flex:0 0 24px}
+  .stop.pick .n{background:#173a52;color:var(--blue)}
+  .stop.drop .n{background:#1d3326;color:var(--accent)}
+  .stop .info{flex:1;min-width:0}
+  .stop .t{font-weight:600;font-size:13.5px}
+  .stop .d{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .stop .eta{font-size:11.5px;text-align:right;flex:0 0 auto}
+  .eta .ok{color:var(--good)} .eta .late{color:var(--bad)}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:4px 0}
+  .kv .v{font-weight:700}
+  .small{font-size:11.5px;color:var(--dim)}
+  .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);
+    background:#000;color:#fff;padding:10px 16px;border-radius:30px;font-size:13px;
+    opacity:0;transition:.2s;pointer-events:none;z-index:50;max-width:90%}
+  .toast.show{opacity:.95}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);
+    border-top:1px solid var(--line);padding:12px 14px env(safe-area-inset-bottom);
+    display:flex;gap:8px;max-width:560px;margin:0 auto}
+  .bar>*{flex:1}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid #ffffff55;
+    border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;
+    vertical-align:-2px;margin-right:6px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  details{margin-top:8px}
+  summary{font-size:12px;color:var(--dim);cursor:pointer}
+  .gear{position:absolute;top:14px;right:14px;width:34px;height:34px;padding:0;
+    background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--dim)}
+  .hint{font-size:12px;color:var(--dim);line-height:1.5}
+  .err{color:var(--bad);font-size:12.5px;margin-top:8px}
+</style>
+
+<div class="wrap">
+  <div style="position:relative">
+    <h1><span class="dot"></span> Shipt Router</h1>
+    <p class="sub">Screenshot an offer → it reads the addresses → tells you accept or skip + the route.</p>
+    <button class="gear" onclick="toggle('setup')">⚙</button>
+  </div>
+
+  <!-- SETUP -->
+  <div class="card hide" id="setup">
+    <h2>Setup (one time)</h2>
+    <label>OpenRouteService API key <span class="small">— free at openrouteservice.org/dev → sign up → Dashboard → request a token</span></label>
+    <input id="orsKey" placeholder="paste maps key here" autocomplete="off">
+    <label>Gemini vision key <span class="small">— free at aistudio.google.com/apikey → Create API key. Reads your screenshots.</span></label>
+    <input id="visionKey" placeholder="paste vision key here" autocomplete="off">
+    <label>Your starting location (where you are now)</label>
+    <input id="startAddr" placeholder="e.g. 123 Main St, Philadelphia PA  (or leave blank)">
+    <label>Avg minutes spent in-store per pickup</label>
+    <input id="shopMin" type="number" value="18" inputmode="numeric">
+    <div class="row" style="margin-top:12px">
+      <button class="ghost" onclick="saveSetup()">Save</button>
+      <button class="ghost" onclick="useGPS()">Use my GPS</button>
+    </div>
+    <p class="hint" style="margin-top:10px">Keys + settings are stored only on this phone. Screenshots go to Google (Gemini) to read the text; addresses go to the maps service for drive times. Nothing else leaves your phone.</p>
+  </div>
+
+  <!-- ADD ORDER -->
+  <div class="card">
+    <h2>Add an order</h2>
+    <div class="row">
+      <button class="primary" onclick="document.getElementById('shot').click()">📷 Screenshot(s)</button>
+      <button class="ghost" onclick="toggle('manual')">⌨ Type it</button>
+    </div>
+    <input type="file" id="shot" accept="image/*" multiple class="hide" onchange="onShot(event)">
+
+    <div id="manual" class="hide" style="margin-top:12px">
+      <label>Store name</label><input id="mStore" placeholder="Target — Springfield">
+      <label>Store address</label><input id="mStoreA" placeholder="2 Maple Ave, Springfield PA">
+      <label>Customer / drop-off address</label><input id="mDropA" placeholder="88 Oak Rd, Media PA">
+      <label>Delivery window end (when it's due)</label>
+      <input id="mWin" type="time">
+      <label>Pay ($)</label><input id="mPay" type="number" inputmode="decimal" placeholder="14.50">
+      <div class="row" style="margin-top:10px">
+        <button class="ghost" onclick="addManual('current')">Add as current</button>
+        <button class="primary" onclick="addManual('offer')">Add as offer</button>
+      </div>
+    </div>
+    <div id="readout"></div>
+  </div>
+
+  <!-- QUEUE -->
+  <div class="card" id="queueCard">
+    <h2>Your orders</h2>
+    <div id="queue"><p class="small">No orders yet. Add the order you're currently doing first, then screenshot new offers as they come in.</p></div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result"></div>
+</div>
+
+<div class="bar">
+  <button class="primary" id="calcBtn" onclick="optimize()">Calculate best route</button>
+  <button class="danger" style="flex:0 0 90px" onclick="clearAll()">Clear</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const S = {
+  key:'', visionKey:'', start:null, startAddr:'', shopMin:18,
+  orders:[] // {id,name,store,storeA,dropA,winEnd,pay,role,sLat,sLng,dLat,dLng}
+};
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+function toggle(id){$(id).classList.toggle('hide');}
+function save(){localStorage.setItem('shiptRouter',JSON.stringify(S));}
+function load(){try{const d=JSON.parse(localStorage.getItem('shiptRouter'));
+  if(d)Object.assign(S,d);}catch(e){}
+  $('orsKey').value=S.key||'';$('visionKey').value=S.visionKey||'';
+  $('startAddr').value=S.startAddr||'';
+  $('shopMin').value=S.shopMin||18;render();}
+
+function saveSetup(){
+  S.key=$('orsKey').value.trim();
+  S.visionKey=$('visionKey').value.trim();
+  S.startAddr=$('startAddr').value.trim();
+  S.shopMin=parseInt($('shopMin').value)||18;
+  if(S.startAddr) geocode(S.startAddr).then(c=>{S.start=c;save();toast('Saved + located');})
+    .catch(()=>{save();toast('Saved (couldn\'t geocode start)');});
+  else {S.start=null;save();toast('Saved');}
+  toggle('setup');
+}
+function useGPS(){
+  if(!navigator.geolocation)return toast('No GPS available');
+  toast('Getting location…');
+  navigator.geolocation.getCurrentPosition(p=>{
+    S.start={lat:p.coords.latitude,lng:p.coords.longitude};
+    S.startAddr='(GPS)';$('startAddr').value='(GPS)';save();toast('Got your location');
+  },()=>toast('GPS denied'),{enableHighAccuracy:true,timeout:8000});
+}
+
+/* ---------- screenshot reading via Gemini vision ---------- */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function readOne(f,tries=3){
+  if(!S.visionKey) throw new Error('no vision key');
+  const b64=await toB64(f);
+  const prompt=`This is a screenshot of a Shipt delivery order offer. Extract these fields and respond with ONLY a JSON object, no markdown, no code fences, no prose:
+{"store":"store name","storeAddress":"full pickup store address if shown else empty","dropAddress":"customer/delivery address if shown else empty","windowEnd":"delivery-by time in 24h HH:MM if shown else empty","pay":number or null}
+If a field isn't visible, use empty string or null. Do not guess addresses you cannot see.`;
+  let lastErr;
+  for(let attempt=0; attempt<tries; attempt++){
+    if(attempt) await sleep(1200*attempt); // backoff: 0, 1.2s, 2.4s
+    try{
+      const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-goog-api-key":S.visionKey},
+        body:JSON.stringify({contents:[{parts:[
+          {inline_data:{mime_type:f.type||"image/jpeg",data:b64}},
+          {text:prompt}]}]})
+      });
+      const data=await r.json();
+      if(data.error){
+        const msg=data.error.message||'vision API error';
+        // retry on overload/rate-limit; fail fast on key/auth errors
+        if(/overload|high demand|quota|rate|503|429|unavailable|try again/i.test(msg) && attempt<tries-1){ lastErr=new Error(msg); continue; }
+        throw new Error(msg);
+      }
+      const txt=(((data.candidates||[])[0]||{}).content||{}).parts
+        ?.map(p=>p.text||"").join("")||"";
+      if(!txt){ lastErr=new Error('empty response'); continue; }
+      return JSON.parse(txt.replace(/```json|```/g,"").trim());
+    }catch(e){ lastErr=e; if(attempt>=tries-1) throw e; }
+  }
+  throw lastErr||new Error('read failed');
+}
+
+async function onShot(e){
+  const files=[...e.target.files]; if(!files.length)return; e.target.value='';
+
+  if(!S.visionKey){
+    $('readout').innerHTML='<p class="err">Add a free Gemini vision key in ⚙ Setup first — that\'s what reads the screenshots. (Or use "Type it" to enter orders by hand.)</p>';
+    toggle('setup');
+    return;
+  }
+
+  // single file → keep the review-then-assign flow (lets you mark it "current")
+  if(files.length===1){
+    $('readout').innerHTML='<p class="small"><span class="spin"></span>Reading screenshot…</p>';
+    try{ showReadout(await readOne(files[0])); }
+    catch(err){ const m=(typeof err==='string'?err:(err&&err.message)||'read failed'); $('readout').innerHTML=`<p class="err">Couldn't read that screenshot (${esc(m)}). Try "Type it", or a clearer crop showing store + address + time + pay.</p>`; }
+    return;
+  }
+
+  // multiple files → read sequentially (with retry) so one overload doesn't sink the batch
+  let ok=0, fail=0, firstErr='';
+  for(let i=0;i<files.length;i++){
+    $('readout').innerHTML=`<p class="small"><span class="spin"></span>Reading screenshot ${i+1} of ${files.length}…</p>`;
+    try{
+      const j=await readOne(files[i]);
+      addOrder({name:j.store||'Offer',store:j.store,storeA:j.storeAddress,
+        dropA:j.dropAddress,winEnd:j.windowEnd,pay:parseFloat(j.pay)||0,role:'offer',_silent:true});
+      ok++;
+    }catch(s){ fail++; if(!firstErr) firstErr=(typeof s==='string'?s:(s&&s.message)||'read failed'); }
+  }
+  render();
+  $('readout').innerHTML=`<p class="small">Added ${ok} offer${ok!==1?'s':''}${fail?` · ${fail} couldn't be read${firstErr?` (${esc(firstErr)})`:''}`:''}.${fail?' Re-screenshot the missed one(s) and add again.':''}${ok?' Mark your current order with the tags below if needed, then Calculate.':''}</p>`;
+  toast(`${ok} offer${ok!==1?'s':''} added${fail?`, ${fail} missed`:''}`);
+}
+function showReadout(j){
+  window._pending=j;
+  $('readout').innerHTML=`
+    <div class="order" style="margin-top:10px">
+      <div class="nm">${esc(j.store||'Order')}</div>
+      <div class="meta">🏪 ${esc(j.storeAddress||'(no store address read)')}</div>
+      <div class="meta">📍 ${esc(j.dropAddress||'(no drop address read)')}</div>
+      <div class="meta">⏰ due ${esc(j.windowEnd||'?')} &nbsp; 💵 $${j.pay??'?'}</div>
+    </div>
+    <p class="small">Edit anything wrong by using "Type it". Otherwise:</p>
+    <div class="row">
+      <button class="ghost" onclick="commitPending('current')">This is my current order</button>
+      <button class="primary" onclick="commitPending('offer')">This is a new offer</button>
+    </div>`;
+}
+function commitPending(role){
+  const j=window._pending; if(!j)return;
+  addOrder({name:j.store,store:j.store,storeA:j.storeAddress,
+    dropA:j.dropAddress,winEnd:j.windowEnd,pay:parseFloat(j.pay)||0,role});
+  window._pending=null;$('readout').innerHTML='';
+}
+function addManual(role){
+  addOrder({name:$('mStore').value||'Order',store:$('mStore').value,
+    storeA:$('mStoreA').value,dropA:$('mDropA').value,winEnd:$('mWin').value,
+    pay:parseFloat($('mPay').value)||0,role});
+  ['mStore','mStoreA','mDropA','mPay'].forEach(i=>$(i).value='');
+  toggle('manual');
+}
+function addOrder(o){
+  o.id=Date.now()+''+Math.random().toString(36).slice(2,5);
+  if(o.role==='current') S.orders.forEach(x=>{if(x.role==='current')x.role='offer';});
+  S.orders.push(o);save();render();
+  if(!o._silent) toast(role2(o.role)+' added');
+}
+function role2(r){return r==='current'?'Current order':'Offer';}
+function removeOrder(id){S.orders=S.orders.filter(o=>o.id!==id);save();render();}
+function clearAll(){if(confirm('Clear all orders?')){S.orders=[];save();render();$('result').innerHTML='';}}
+
+function render(){
+  const q=$('queue');
+  if(!S.orders.length){q.innerHTML='<p class="small">No orders yet. Add the order you\'re currently doing first, then screenshot new offers as they come in.</p>';return;}
+  q.innerHTML=S.orders.map(o=>`
+    <div class="order">
+      <button class="x" onclick="removeOrder('${o.id}')">×</button>
+      <div class="nm">${esc(o.name)}<span class="tag ${o.role==='current'?'cur':'offer'}">${o.role==='current'?'CURRENT':'OFFER'}</span></div>
+      <div class="meta">🏪 ${esc(o.storeA||'—')}</div>
+      <div class="meta">📍 ${esc(o.dropA||'—')}</div>
+      <div class="meta">⏰ ${esc(o.winEnd||'?')} &nbsp; 💵 $${o.pay.toFixed(2)}</div>
+    </div>`).join('');
+}
+
+/* ---------- geocoding + matrix via ORS ---------- */
+function cleanAddr(a){
+  if(!a)return'';
+  return (''+a).trim()
+    .replace(/\s+/g,' ')        // collapse whitespace
+    .replace(/\s*,\s*/g,', ')   // normalize comma spacing
+    .replace(/,\s*,/g,', ')     // drop empty comma segments
+    .replace(/\s+,/g,',')       // no space before comma
+    .trim();
+}
+async function geocodeRaw(text){
+  const u=`https://api.openrouteservice.org/geocode/search?api_key=${S.key}&text=${encodeURIComponent(text)}&boundary.country=US&size=1`;
+  const r=await fetch(u);
+  if(!r.ok) throw new Error('maps service error '+r.status);
+  const d=await r.json();
+  const f=d.features&&d.features[0];
+  if(!f) return null;
+  const c=f.geometry.coordinates;
+  const p=f.properties||{};
+  return {lat:c[1],lng:c[0],
+    confidence:(p.confidence!=null?p.confidence:0.5),
+    layer:p.layer||''}; // layer 'address' is precise; 'postalcode'/'locality' are approximate
+}
+function haversineMi(a,b){
+  const R=3959,toR=x=>x*Math.PI/180;
+  const dLat=toR(b.lat-a.lat),dLng=toR(b.lng-a.lng);
+  const s=Math.sin(dLat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function median(arr){const a=arr.slice().sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):0;}
+// pull a "City, ST" or ZIP from an address to use as a locating hint
+function regionHint(addr){
+  if(!addr)return'';
+  const s=''+addr;
+  const m=s.match(/([A-Za-z .'-]+),?\s+([A-Z]{2})\s+(\d{5})/); // City ST ZIP
+  if(m)return `${m[1].trim()}, ${m[2]} ${m[3]}`;
+  const z=s.match(/\b\d{5}\b/); if(z)return z[0];
+  return '';
+}
+// strip Shipt's "Brand - Location" into a clean searchable store name
+function cleanStoreName(name){
+  if(!name)return'';
+  let s=(''+name).trim();
+  // "Target - Plymouth Meeting" -> "Target Plymouth Meeting" (both brand + location help the search)
+  s=s.replace(/\s*[-–—]\s*/g,' ');
+  return s.replace(/\s+/g,' ').trim();
+}
+async function geocode(addr){
+  if(!S.key)throw new Error('no maps key');
+  if(!addr||!(''+addr).trim())throw new Error('blank address');
+  const cleaned=cleanAddr(addr);
+  const mark=c=>{ if(c) c.approx = (c.layer && c.layer!=='address') || c.confidence<0.4; return c; };
+  // attempt 1: cleaned address
+  let c=await geocodeRaw(cleaned);
+  if(c)return mark(c);
+  // attempt 2: original as-is
+  if(cleaned!==(''+addr).trim()){ c=await geocodeRaw((''+addr).trim()); if(c)return mark(c); }
+  // attempt 3: street number/name + ZIP (ZIP anchors it even if city/commas are messy)
+  const zip=cleaned.match(/\b\d{5}\b/);
+  const num=cleaned.match(/^\s*(\d+[^,]*)/);
+  if(zip&&num){ c=await geocodeRaw(num[1].trim()+', '+zip[0]); if(c)return mark(c); }
+  // attempt 4: ZIP alone (drops to ZIP centroid — approximate but routable)
+  if(zip){ c=await geocodeRaw(zip[0]); if(c){ c.approx=true; return c; } }
+  throw new Error('couldn\'t locate "'+cleaned+'"');
+}
+async function matrix(points){ // points:[{lat,lng}] -> minutes matrix
+  const locs=points.map(p=>[p.lng,p.lat]);
+  const r=await fetch("https://api.openrouteservice.org/v2/matrix/driving-car",{
+    method:"POST",headers:{"Content-Type":"application/json","Authorization":S.key},
+    body:JSON.stringify({locations:locs,metrics:["duration"]})});
+  const d=await r.json();
+  if(!d.durations)throw(d.error&&d.error.message)||'matrix failed';
+  return d.durations.map(row=>row.map(s=>s/60));
+}
+
+/* ---------- the optimizer ---------- */
+async function optimize(){
+  const btn=$('calcBtn');const old=btn.innerHTML;
+  btn.innerHTML='<span class="spin"></span>Calculating…';btn.disabled=true;
+  $('result').innerHTML='';
+  try{
+    if(!S.key){toggle('setup');throw new Error('Add your free OpenRouteService key in Setup first.');}
+    if(S.orders.length<1)throw new Error('Add at least one order.');
+
+    // geocode any missing coords; collect problems instead of aborting
+    const problems=[];
+    for(const o of S.orders){
+      o._bad=false; o._approx=false;
+      // --- DROP first, so we can borrow its region as a hint for the store ---
+      try{
+        if(o.dropA&&(o.dLat==null)){const c=await geocode(o.dropA);o.dLat=c.lat;o.dLng=c.lng;if(c.approx)o._approx=true;}
+        else if(!o.dropA){ o._bad=true; problems.push(`${o.name}: no drop-off address`); }
+      }catch(e){ o._bad=true; problems.push(`${o.name}: drop address ${e.message}`); }
+      // --- STORE: use street address if present, else geocode the store name ---
+      try{
+        if(o.sLat==null){
+          if(o.storeA){
+            const c=await geocode(o.storeA);o.sLat=c.lat;o.sLng=c.lng;if(c.approx)o._approx=true;
+          } else if(o.store){
+            // no street address on the offer — locate the store by name + region hint
+            const hint=regionHint(o.dropA);
+            const query=cleanStoreName(o.store)+(hint?', '+hint:'');
+            const c=await geocode(query);o.sLat=c.lat;o.sLng=c.lng;o._approx=true;
+          } else {
+            o._bad=true; problems.push(`${o.name}: no store info`);
+          }
+        }
+      }catch(e){ o._bad=true; problems.push(`${o.name}: couldn't locate store ${e.message}`); }
+    }
+    save();
+
+    // OUTLIER CHECK: Shipt orders cluster in one metro. Any point landing far from
+    // the cluster center is almost certainly a bad geocode (wrong city/state) that
+    // would otherwise produce an absurd drive time. Flag those orders as bad.
+    const pts=[];
+    S.orders.forEach(o=>{ if(o.sLat!=null)pts.push({lat:o.sLat,lng:o.sLng}); if(o.dLat!=null)pts.push({lat:o.dLat,lng:o.dLng}); });
+    if(pts.length>=2){
+      const center={lat:median(pts.map(p=>p.lat)),lng:median(pts.map(p=>p.lng))};
+      const MAX_MI=120; // a single delivery run won't span more than ~120mi
+      for(const o of S.orders){
+        if(o._bad)continue;
+        const sFar=o.sLat!=null && haversineMi(center,{lat:o.sLat,lng:o.sLng})>MAX_MI;
+        const dFar=o.dLat!=null && haversineMi(center,{lat:o.dLat,lng:o.dLng})>MAX_MI;
+        if(sFar||dFar){
+          o._bad=true;
+          problems.push(`${o.name}: ${sFar?'store':'drop'} address resolved far outside your area — likely misread, re-check it`);
+          // clear the bad cached coords so a corrected re-calc re-geocodes cleanly
+          if(sFar){o.sLat=null;o.sLng=null;} if(dFar){o.dLat=null;o.dLng=null;}
+        }
+      }
+    }
+
+    // route only the orders that fully geocoded and passed the outlier check
+    const usable=S.orders.filter(o=>!o._bad && o.sLat!=null && o.dLat!=null);
+    if(!usable.length) throw new Error('No orders could be reliably mapped. '+(problems[0]||'Check the addresses.'));
+
+    // note any orders whose store was located by name (approximate) so drive times are flagged
+    usable.forEach(o=>{ if(o._approx && !o.storeA && o.store) problems.push(`${o.name}: store located by name only ("${cleanStoreName(o.store)}") — drive time approximate`); });
+
+    const current=usable.filter(o=>o.role==='current');
+    const offers=usable.filter(o=>o.role==='offer');
+
+    // Build scenarios = current orders + every useful SUBSET of offers.
+    // We always keep current orders (you're committed to them). We test which
+    // combination of offers to bolt on for the best feasible $/hr.
+    const scenarios=[];
+    if(current.length) scenarios.push({label:'Current only',set:current,take:[]});
+
+    if(offers.length){
+      if(offers.length<=6){
+        // full power set of offers (1..2^n-1)
+        const n=offers.length;
+        for(let mask=1; mask<(1<<n); mask++){
+          const take=[]; for(let i=0;i<n;i++) if(mask&(1<<i)) take.push(offers[i]);
+          scenarios.push({set:[...current,...take],take,
+            label: take.length===n ? 'All offers'
+                  : take.length===1 ? take[0].name
+                  : take.map(o=>shortName(o.name)).join(' + ')});
+        }
+      } else {
+        // too many to brute-force every subset; greedily add offers by $/hr-feasibility
+        scenarios.push({label:'Each offer alone',set:current,take:[],_greedy:true});
+        offers.forEach(o=>scenarios.push({set:[...current,o],take:[o],label:o.name}));
+        scenarios.push({set:[...current,...offers],take:offers,label:'All offers'});
+      }
+    }
+    if(!scenarios.length) scenarios.push({label:'All',set:usable,take:[]});
+
+    // ONE matrix call covering every stop across all usable orders, then reuse it.
+    const masterNodes=[];
+    if(S.start) masterNodes.push({key:'start',lat:S.start.lat,lng:S.start.lng});
+    usable.forEach(o=>{
+      masterNodes.push({key:'p'+o.id,lat:o.sLat,lng:o.sLng});
+      masterNodes.push({key:'d'+o.id,lat:o.dLat,lng:o.dLng});
+    });
+    const masterIdx={}; masterNodes.forEach((n,i)=>masterIdx[n.key]=i);
+    const masterM=await matrix(masterNodes.map(n=>({lat:n.lat,lng:n.lng})));
+
+    const results=[];
+    for(const sc of scenarios){
+      const best=routeFor(sc.set,masterM,masterIdx);
+      results.push({...sc,...best});
+    }
+    // recommendation: feasible scenario with max $/hr
+    const feasible=results.filter(r=>r.feasible);
+    feasible.sort((a,b)=>b.perHr-a.perHr);
+    const rec=feasible[0]||results.slice().sort((a,b)=>b.perHr-a.perHr)[0];
+    renderResult(results,rec,offers,problems);
+  }catch(err){
+    $('result').innerHTML=`<div class="card"><p class="err">${esc(typeof err==='string'?err:(err.message||'Something went wrong. Check addresses + key.'))}</p></div>`;
+  }finally{btn.innerHTML=old;btn.disabled=false;}
+}
+
+// route a set of orders using the prebuilt master matrix (no API call)
+function routeFor(orders,masterM,masterIdx){
+  const nodes=[];
+  if(S.start) nodes.push({type:'start',mi:masterIdx['start']});
+  orders.forEach((o,i)=>{
+    nodes.push({type:'pick',oi:i,name:o.store,mi:masterIdx['p'+o.id]});
+    nodes.push({type:'drop',oi:i,name:o.name,due:parseWin(o.winEnd),pay:o.pay,mi:masterIdx['d'+o.id]});
+  });
+  const movable=nodes.map((n,i)=>i).filter(i=>nodes[i].type!=='start');
+  const startIdx=S.start?0:null;
+  let best=null;
+  perms(movable,seq=>{
+    const pos={};seq.forEach((idx,k)=>pos[idx]=k);
+    for(let i=0;i<nodes.length;i++)if(nodes[i].type==='pick'){
+      const drop=nodes.findIndex(n=>n.type==='drop'&&n.oi===nodes[i].oi);
+      if(pos[i]>pos[drop])return;
+    }
+    let t=startMins(); let prev=startIdx; let feasible=true; let lateBy=0;
+    const stops=[];
+    for(const idx of seq){
+      const n=nodes[idx];
+      const travel = prev==null?0:masterM[nodes[prev].mi][n.mi];
+      t+=travel;
+      if(n.type==='pick'){stops.push({...n,at:t,travel}); t+=S.shopMin;}
+      else{
+        const late=n.due!=null&&t>n.due;
+        if(late){feasible=false;lateBy+=t-n.due;}
+        stops.push({...n,at:t,travel,late});
+      }
+      prev=idx;
+    }
+    const span=t-startMins();
+    const cand={stops,span,feasible,lateBy};
+    if(!best) best=cand;
+    else if(feasible&&!best.feasible) best=cand;
+    else if(feasible===best.feasible){
+      if(feasible){if(span<best.span)best=cand;}
+      else{if(lateBy<best.lateBy)best=cand;}
+    }
+  });
+  const pay=orders.reduce((s,o)=>s+(o.pay||0),0);
+  const hrs=best.span/60;
+  return {stops:best.stops,span:best.span,feasible:best.feasible,
+    lateBy:best.lateBy,pay,perHr:hrs>0?pay/hrs:pay,n:orders.length};
+}
+
+function perms(arr,cb){
+  // Full brute force up to 8 movable nodes (= 4 orders). 8! = 40320, fine on a phone.
+  if(arr.length<=8){
+    const a=arr.slice();
+    (function go(k){ if(k===a.length){cb(a.slice());return;}
+      for(let i=k;i<a.length;i++){[a[k],a[i]]=[a[i],a[k]];go(k+1);[a[k],a[i]]=[a[i],a[k]];}})(0);
+    return;
+  }
+  // Larger sets: just emit the identity order; routeFor's precedence filter still applies.
+  // (5+ simultaneous orders is rare on Shipt; results are flagged as approximate.)
+  cb(arr.slice());
+}
+function shortName(s){s=(s||'').trim();return s.length>14?s.slice(0,13)+'…':s;}
+function parseWin(s){ if(!s)return null; const m=s.match(/(\d{1,2}):(\d{2})/);
+  if(!m)return null; return (+m[1])*60+(+m[2]); }
+function startMins(){const d=new Date();return d.getHours()*60+d.getMinutes();}
+function fmtClock(mins){mins=Math.round(mins);let h=Math.floor(mins/60)%24,m=mins%60;
+  const ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${String(m).padStart(2,'0')} ${ap}`;}
+
+function renderResult(results,rec,offers,problems){
+  const accept = rec && rec.label!=='Current only';
+  const cur = results.find(r=>r.label==='Current only');
+  let html='';
+  if(problems&&problems.length){
+    html+=`<div class="card" style="border-color:#5a4a1f;background:#2a2410">
+      <h2 style="color:var(--warn)">⚠ Notes (${problems.length})</h2>
+      ${problems.map(p=>`<div class="small" style="margin:3px 0">• ${esc(p)}</div>`).join('')}
+      <p class="small" style="margin-top:8px">Skipped orders aren't in the route. "Approximate" ones are routed but their drive times are estimates. Fix via "Type it" or re-screenshot, then recalculate.</p>
+    </div>`;
+  }
+  if(offers.length){
+    const cls=accept?'accept':'skip';
+    const head=accept?'✅ ACCEPT':'⛔ SKIP';
+    let why;
+    if(!accept){
+      const blocked=results.filter(r=>r.label!=='Current only'&&!r.feasible);
+      why = blocked.length? `Adding an offer would make a delivery late — best added route misses its window. Stay on your current run.`
+        : `No offer beats your current $/hr without risking a window.`;
+    } else {
+      why = `Best plan: <b>${esc(rec.label)}</b> → $${rec.perHr.toFixed(2)}/hr`
+        + (cur? ` vs $${cur.perHr.toFixed(2)}/hr current-only.`:'.');
+    }
+    html+=`<div class="verdict ${cls}"><div class="big">${head}</div>
+      <div class="why">${why}</div></div>`;
+  }
+  // recommended route stops
+  if(rec){
+    html+=`<div class="card"><h2>Best route — ${esc(rec.label)}</h2>
+      <div class="kv"><span>Projected $/hour</span><span class="v" style="color:var(--accent)">$${rec.perHr.toFixed(2)}</span></div>
+      <div class="kv"><span>Total pay</span><span class="v">$${rec.pay.toFixed(2)}</span></div>
+      <div class="kv"><span>Total time</span><span class="v">${Math.round(rec.span)} min</span></div>
+      ${rec.feasible?'':'<div class="kv"><span style="color:var(--bad)">⚠ Some windows missed</span><span class="v"></span></div>'}
+      <div class="stops">${rec.stops.map((s,i)=>stopRow(s,i)).join('')}</div>
+    </div>`;
+  }
+  // comparison of all scenarios
+  if(results.length>1){
+    html+=`<div class="card"><h2>All options</h2>${
+      results.slice().sort((a,b)=>b.perHr-a.perHr).map(r=>`
+      <div class="kv"><span>${r.feasible?'🟢':'🔴'} ${esc(r.label)} <span class="small">(${r.n} order${r.n>1?'s':''})</span></span>
+        <span class="v">$${r.perHr.toFixed(2)}/hr</span></div>`).join('')}
+      <p class="small" style="margin-top:8px">🔴 = a delivery window would be missed.</p>
+    </div>`;
+  }
+  $('result').innerHTML=html;
+  $('result').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function stopRow(s,i){
+  const isPick=s.type==='pick';
+  const cls=isPick?'pick':'drop';
+  const label=isPick?`Pick up — ${esc(s.name)}`:`Drop off — ${esc(s.name)}`;
+  let eta=`<span class="${s.late?'late':'ok'}">${fmtClock(s.at)}</span>`;
+  if(!isPick&&s.due!=null) eta+=`<div class="small">due ${fmtClock(s.due)}${s.late?' • LATE':''}</div>`;
+  return `<div class="stop ${cls}"><div class="n">${i+1}</div>
+    <div class="info"><div class="t">${label}</div>
+      <div class="d">${isPick?'🏪':'📍'} drive ${Math.round(s.travel)} min</div></div>
+    <div class="eta">${eta}</div></div>`;
+}
+
+function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();
+  r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});}
+function esc(s){return(s==null?'':''+s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+load();
+</script>
